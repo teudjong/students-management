@@ -16,6 +16,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,13 +32,19 @@ public class PaymentService {
         this.paymentRepository = paymentRepository;
     }
 
+    /**
+     *
+     * @param file
+     * @param newPaymentDTO
+     * @return
+     * @throws IOException
+     */
     public Payment savePayment(MultipartFile file, NewPaymentDTO newPaymentDTO) throws IOException {
-        Path folderpath = Paths.get(System.getProperty("user.home"), "enset-data", "payments");
-        if (!Files.exists(folderpath))
-            Files.createDirectories(folderpath);
         String fileName = UUID.randomUUID().toString();
         Path filePath = Paths.get(System.getProperty("user.home"), "enset-data", "payment", fileName + ".pdf");
-        Files.copy(file.getInputStream(), filePath);
+        if (!Files.exists(filePath.getParent().toAbsolutePath()))
+            Files.createDirectories(filePath);
+        Files.copy(file.getInputStream(), filePath,StandardCopyOption.REPLACE_EXISTING);
         Student student = this.studentRepository.findByCode(newPaymentDTO.getStudentCode());
         Payment payment = Payment.builder().date(newPaymentDTO.getDate()).type(newPaymentDTO.getType()).student(student).amount(newPaymentDTO.getAmount()).file(filePath.toUri().toString()).status(PaymentStatus.CREATED).build();
         return this.paymentRepository.save(payment);
